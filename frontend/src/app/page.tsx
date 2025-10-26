@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import ChatMessageList from '@/components/chat/chat-message-list';
 import ChatComposer from '@/components/chat/chat-composer';
 import ModelSelect from '@/components/chat/model-select';
@@ -36,7 +35,8 @@ export default function HomePage() {
     startFreshSession,
     selectSession,
     lastActivity,
-    setError
+    setError,
+    cancelPendingResponse
   } = useChat();
   const sessionLabel = sessionId ? `${sessionId.slice(0, 10)}…` : 'initializing…';
   const lastActivityLabel = formatRelative(lastActivity);
@@ -75,7 +75,12 @@ export default function HomePage() {
           <main className="flex h-[80vh] flex-col rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
             <div className="flex flex-1 flex-col gap-6 overflow-hidden">
               <ChatMessageList messages={messages} loading={historyLoading} typing={typing} />
-              <ChatComposer onSend={sendMessage} disabled={!selectedModel || modelsLoading} typing={typing} />
+              <ChatComposer
+                onSend={sendMessage}
+                disabled={!selectedModel || modelsLoading}
+                typing={typing}
+                onCancel={cancelPendingResponse}
+              />
             </div>
           </main>
         </div>

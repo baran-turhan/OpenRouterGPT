@@ -121,7 +121,7 @@ const ChatMessageList = ({ messages, loading, typing }: ChatMessageListProps) =>
                 )}
               >
                 <div className="mb-3 flex flex-wrap items-center gap-3 text-xs uppercase tracking-wide text-slate-400">
-                  <span className={clsx('font-semibold', isUser ? 'text-indigo-500' : 'text-emerald-500')}>
+                  <span className={clsx('font-semibold', isUser ? 'text-black' : 'text-emerald-500')}>
                     {isUser ? 'You' : 'Assistant'}
                   </span>
                   <span className="text-slate-300">•</span>

@@ -38,11 +38,12 @@ interface SendChatPayload {
   temperature?: number;
 }
 
-export const sendChat = async (payload: SendChatPayload): Promise<ChatResponse> => {
+export const sendChat = async (payload: SendChatPayload, signal?: AbortSignal): Promise<ChatResponse> => {
   const response = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
+    signal
   });
   return await handleResponse<ChatResponse>(response);
 };

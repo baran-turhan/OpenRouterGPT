@@ -14,11 +14,12 @@ interface ChatComposerProps {
   onSend: (message: string, attachments: File[]) => Promise<void> | void;
   disabled?: boolean;
   typing: boolean;
+  onCancel?: () => void;
 }
 
 const createId = () => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2));
 
-const ChatComposer = ({ onSend, disabled, typing }: ChatComposerProps) => {
+const ChatComposer = ({ onSend, disabled, typing, onCancel }: ChatComposerProps) => {
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState<AttachmentPreview[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -153,12 +154,21 @@ const ChatComposer = ({ onSend, disabled, typing }: ChatComposerProps) => {
             {typing && <span className="text-amber-500">Waiting for model...</span>}
           </div>
         </div>
+        {typing && onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="h-14 rounded-3xl border border-rose-200 px-6 text-base font-semibold text-rose-600 transition hover:border-rose-300"
+          >
+            Cancel
+          </button>
+        )}
         <button
           type="submit"
           disabled={disabled || typing || !message.trim()}
           className={clsx(
-            'h-14 w-40 rounded-3xl bg-gradient-to-r from-indigo-500 to-sky-500 text-base font-semibold text-white transition hover:from-indigo-400 hover:to-sky-400',
-            (disabled || typing || !message.trim()) && 'opacity-50'
+            'h-14 w-40 rounded-3xl bg-black text-base font-semibold text-white transition hover:bg-gray-400',
+            (disabled || typing || !message.trim()) && 'opacity-100'
           )}
         >
           {typing ? 'Thinking…' : 'Send'}

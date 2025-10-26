@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { fetchHistory, fetchModels, fetchSessions, sendChat, uploadImage } from '@/lib/api';
 import { ChatMessage, ModelOption, SessionHistory } from '@/types/chat';
 
@@ -27,6 +27,7 @@ export const useChat = () => {
   const [typing, setTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const pendingAbort = useRef<AbortController | null>(null);
 
   const ensureSessionId = useCallback(() => {
     if (sessionId) {
@@ -182,6 +183,12 @@ export const useChat = () => {
 
       setMessages((prev) => [...prev, optimisticMessage]);
 
+      if (pendingAbort.current) {
+        pendingAbort.current.abort();
+      }
+      const controller = new AbortController();
+      pendingAbort.current = controller;
+
       try {
         const response = await sendChat({
           sessionId: activeSession,
@@ -189,7 +196,7 @@ export const useChat = () => {
           message: trimmed,
           imageUrls: uploadedUrls,
           temperature: 0.2,
-        });
+        }, controller.signal);
         setSessionId(response.sessionId);
         if (typeof window !== 'undefined') {
           localStorage.setItem(SESSION_KEY, response.sessionId);
@@ -198,12 +205,17 @@ export const useChat = () => {
         setLastUpdated(response.message.createdAt);
         await loadSessions();
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unable to send message';
-        setMessages((prev) =>
-          prev.map((msg) => (msg.id === optimisticMessage.id ? { ...msg, error: message } : msg))
-        );
-        setError(message);
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          setError(null);
+        } else {
+          const message = err instanceof Error ? err.message : 'Unable to send message';
+          setMessages((prev) =>
+            prev.map((msg) => (msg.id === optimisticMessage.id ? { ...msg, error: message } : msg))
+          );
+          setError(message);
+        }
       } finally {
+        pendingAbort.current = null;
         setTyping(false);
       }
     },
@@ -246,6 +258,14 @@ export const useChat = () => {
     return new Date(lastUpdated);
   }, [lastUpdated]);
 
+  const cancelPendingResponse = useCallback(() => {
+    if (pendingAbort.current) {
+      pendingAbort.current.abort();
+      pendingAbort.current = null;
+      setTyping(false);
+    }
+  }, []);
+
   return {
     sessionId,
     messages,
@@ -264,5 +284,6 @@ export const useChat = () => {
     selectSession,
     lastActivity,
     setError,
+    cancelPendingResponse
   };
 };
