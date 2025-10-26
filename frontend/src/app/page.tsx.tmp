@@ -1,0 +1,102 @@
+'use client';
+
+import ChatMessageList from '@/components/chat/chat-message-list';
+import ChatComposer from '@/components/chat/chat-composer';
+import ModelSelect from '@/components/chat/model-select';
+import ErrorBanner from '@/components/error-banner';
+import SessionsSidebar from '@/components/sessions-sidebar';
+import { useChat } from '@/hooks/useChat';
+
+const formatRelative = (date: Date | null) => {
+  if (!date) return 'No activity yet';
+  return new Intl.DateTimeFormat(undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+    month: 'short',
+    day: 'numeric'
+  }).format(date);
+};
+
+export default function HomePage() {
+  const {
+    sessionId,
+    sessions,
+    sessionsLoading,
+    messages,
+    models,
+    selectedModel,
+    typing,
+    error,
+    modelsLoading,
+    historyLoading,
+    sendMessage,
+    changeModel,
+    refreshModels,
+    startFreshSession,
+    selectSession,
+    lastActivity,
+    setError
+  } = useChat();
+  const sessionLabel = sessionId ? `${sessionId.slice(0, 10)}…` : 'initializing…';
+
+  return (
+    <div className="flex min-h-screen bg-slate-100 text-slate-900">
+      <div className="flex-shrink-0 border-r border-slate-200 bg-white/90 px-4 py-10">
+        <SessionsSidebar
+          sessions={sessions}
+          currentSessionId={sessionId}
+          loading={sessionsLoading}
+          onSelect={selectSession}
+          onNewSession={startFreshSession}
+          className="w-80"
+        />
+      </div>
+      <div className="flex flex-1 justify-center px-4 py-10 sm:px-8">
+        <div className="flex w-full max-w-4xl flex-col gap-6">
+          <header className="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Madlen Dev-Team</p>
+                <h1 className="mt-3 text-3xl font-semibold text-slate-900">AI Operations Console</h1>
+                <p className="mt-2 max-w-2xl text-slate-500">
+                  Chat with OpenRouter models, inspect telemetry locally, and hop across previous sessions on the left.
+                </p>
+              </div>
+              <div className="flex flex-col items-start gap-2 text-sm text-slate-500">
+                <span className="text-xs uppercase tracking-wide text-slate-400">Session ID</span>
+                <div className="flex items-center gap-3">
+                  <code className="rounded-2xl bg-slate-900/90 px-3 py-1 text-sm text-white">{sessionLabel}</code>
+                  <button
+                    type="button"
+                    onClick={() => sessionId && navigator.clipboard?.writeText(sessionId)}
+                    className="text-sm font-medium text-slate-600 underline-offset-4 hover:underline"
+                  >
+                    Copy
+                  </button>
+                </div>
+                <p>Last activity · {formatRelative(lastActivity)}</p>
+              </div>
+            </div>
+          </header>
+
+          {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
+
+          <ModelSelect
+            models={models}
+            value={selectedModel}
+            loading={modelsLoading}
+            onChange={changeModel}
+            onRefresh={refreshModels}
+          />
+
+          <main className="flex h-[70vh] flex-col rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm">
+            <div className="flex flex-1 flex-col gap-6 overflow-hidden">
+              <ChatMessageList messages={messages} loading={historyLoading} typing={typing} />
+              <ChatComposer onSend={sendMessage} disabled={!selectedModel || modelsLoading} typing={typing} />
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+}

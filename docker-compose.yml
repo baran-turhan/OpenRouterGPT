@@ -1,0 +1,44 @@
+version: '3.9'
+
+services:
+  jaeger:
+    image: jaegertracing/all-in-one:1.60
+    ports:
+      - '16686:16686' #frontendim
+      - '4318:4318'
+      - '4317:4317'
+    environment:
+      COLLECTOR_OTLP_ENABLED: 'true'
+
+  backend:
+    build: ./backend
+    container_name: madlen-case-backend
+    ports:
+      - '4000:4000'
+    environment:
+      PORT: 4000
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      OPENROUTER_BASE_URL: https://openrouter.ai/api/v1
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
+      OPENROUTER_SITE_URL: http://frontend:3000
+      OPENROUTER_APP_NAME: Madlen Chat
+    volumes:
+      - ./backend/data:/app/data
+      - ./backend/uploads:/app/uploads
+    depends_on:
+      - jaeger
+
+  frontend:
+    build: ./frontend
+    container_name: madlen-case-frontend
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: production
+      BACKEND_URL: http://backend:4000
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:4000
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
+      OTEL_SERVICE_NAME: madlen-chat-frontend
+    depends_on:
+      - backend
+      - jaeger
